@@ -1,12 +1,12 @@
-// multithreaded_server_topcpu.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <dirent.h>
-#include <pthread.h>
 #include <arpa/inet.h>
+#include <sys/select.h>
+#include <errno.h>
 
 #define PORT 1208
 #define MAX_CLIENTS 7
@@ -64,8 +64,9 @@ void get_top_cpu_processes(struct process_info top_processes[2]) {
     top_processes[1] = top2;
 }
 
-// Function to handle client connection
-void *handle_client(int client_sock) {
+void *handle_client(int *client_sockets, int i){
+    int client_sock = client_sockets[i];
+    // Convert the client's IP address to human-readable form
     char buffer[BUFFER_SIZE] = {0};
     struct process_info top_processes[2];
 
@@ -83,40 +84,46 @@ void *handle_client(int client_sock) {
 
     // Read client request (could be any message, we assume a simple message here)
     int bytes_read = read(client_sock, buffer, BUFFER_SIZE);
-    if (bytes_read > 0) {
-        printf("Received request from client: %s\n", buffer);
 
-        // Get the top 2 CPU-consuming processes
+    if (bytes_read > 0) {
+        // Handle the client's request and send the response
+        buffer[bytes_read] = '\0';
+        struct process_info top_processes[2];
         get_top_cpu_processes(top_processes);
 
-        // Log the top 2 processes to the server console
         printf("Top 2 CPU-consuming processes sent to client %s:%d:\n", client_ip, client_port);
         printf("1. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n",
-               top_processes[0].pid, top_processes[0].name, top_processes[0].user_time, top_processes[0].kernel_time);
+            top_processes[0].pid, top_processes[0].name, top_processes[0].user_time, top_processes[0].kernel_time);
         printf("2. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n",
-               top_processes[1].pid, top_processes[1].name, top_processes[1].user_time, top_processes[1].kernel_time);
+            top_processes[1].pid, top_processes[1].name, top_processes[1].user_time, top_processes[1].kernel_time);
 
-        // Prepare the response with the top 2 processes' information
         snprintf(buffer, sizeof(buffer),
-                 "Top 2 CPU-consuming processes:\n"
-                 "1. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n"
-                 "2. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n",
-                 top_processes[0].pid, top_processes[0].name, top_processes[0].user_time, top_processes[0].kernel_time,
-                 top_processes[1].pid, top_processes[1].name, top_processes[1].user_time, top_processes[1].kernel_time);
+                    "Top 2 CPU-consuming processes:\n"
+                    "1. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n"
+                    "2. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n",
+                    top_processes[0].pid, top_processes[0].name, top_processes[0].user_time, top_processes[0].kernel_time,
+                    top_processes[1].pid, top_processes[1].name, top_processes[1].user_time, top_processes[1].kernel_time);
 
-        // Send the response back to the client
         send(client_sock, buffer, strlen(buffer), 0);
     }
-
-    // Close the client socket
+    // Client has disconnected
+    printf("Client disconnected: socket FD is %d\n", client_sock);
     close(client_sock);
-    return NULL;
+    client_sockets[i] = 0; // Remove from client sockets list
 }
 
 int main() {
-    int server_sock, new_sock;
+    int server_sock, client_sock, max_sd, activity;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
+    char buffer[BUFFER_SIZE];
+    fd_set read_fds; // Set of socket descriptors
+
+    // Store client sockets
+    int client_sockets[MAX_CLIENTS];
+    for (int i = 0; i < MAX_CLIENTS; i++) {
+        client_sockets[i] = 0; // Initialize all client sockets to 0
+    }
 
     // Create a TCP socket
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -146,17 +153,66 @@ int main() {
 
     printf("Server listening on port %d...\n", PORT);
 
-    // Main server loop: Accept and handle incoming client connections
+    // Main server loop
     while (1) {
-        new_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len);
-        if (new_sock < 0) {
-            perror("Accept failed");
-            continue;
+        // Clear the socket set
+        FD_ZERO(&read_fds);
+
+        // Add the server socket to the set
+        FD_SET(server_sock, &read_fds);
+        max_sd = server_sock;
+
+        // Add child sockets to the set
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            client_sock = client_sockets[i];
+
+            // If the client socket is a valid descriptor, add it to the set
+            if (client_sock > 0) {
+                FD_SET(client_sock, &read_fds);
+            }
+
+            // Keep track of the maximum socket descriptor
+            if (client_sock > max_sd) {
+                max_sd = client_sock;
+            }
         }
-        handle_client(new_sock);
+
+        // Use select to monitor the sockets for activity
+        activity = select(max_sd + 1, &read_fds, NULL, NULL, NULL);
+        if (activity < 0 && errno != EINTR) {
+            perror("Select error");
+        }
+
+        // Check if there is a new incoming connection on the server socket
+        if (FD_ISSET(server_sock, &read_fds)) {
+            int new_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len);
+            if (new_sock < 0) {
+                perror("Accept failed");
+                continue;
+            }
+
+            printf("New connection: socket FD is %d, IP is : %s, PORT : %d\n",
+                   new_sock, inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
+            // Add the new socket to the list of client sockets
+            for (int i = 0; i < MAX_CLIENTS; i++) {
+                if (client_sockets[i] == 0) {
+                    client_sockets[i] = new_sock;
+                    printf("Adding to list of sockets as %d\n", i);
+                    break;
+                }
+            }
+        }
+
+        // Check all client sockets for incoming data
+        for (int i = 0; i < MAX_CLIENTS; i++) {
+            if (FD_ISSET(client_sockets[i], &read_fds)) {
+                handle_client(client_sockets, i);
+            }
+        }
     }
 
-    // Close server socket (this point is never reached in this implementation)
+    // Close the server socket
     close(server_sock);
     return 0;
 }
