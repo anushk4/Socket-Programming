@@ -20,6 +20,13 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    int opt = 1;
+    if (setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("Set socket options failed");
+        close(server_sock);
+        exit(EXIT_FAILURE);
+    }
+
     // Set up the server address (IP/Port)
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;

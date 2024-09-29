@@ -38,7 +38,7 @@ void *handle_client_for_connection(void *arg) {
         snprintf(buffer, sizeof(buffer),
                  "Top 2 CPU-consuming processes:\n"
                  "1. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n"
-                 "2. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu\n",
+                 "2. PID: %d, Name: %s, User Time: %lu, Kernel Time: %lu",
                  top_processes[0].pid, top_processes[0].name, top_processes[0].user_time, top_processes[0].kernel_time,
                  top_processes[1].pid, top_processes[1].name, top_processes[1].user_time, top_processes[1].kernel_time);
 

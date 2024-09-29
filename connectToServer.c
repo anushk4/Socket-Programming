@@ -43,6 +43,6 @@ void *connect_to_server(void *arg) {
 
     // Close socket
     close(sock);
-    printf("Client %d: Connection closed\n", client->client_id);
+    printf("Client %d: Connection closed\n\n", client->client_id);
     return NULL;
 }
