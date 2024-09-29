@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "pthread.h": "c",
-        "cpu.c": "cpp",
-        "connecttoserver.c": "cpp"
-    }
-}
