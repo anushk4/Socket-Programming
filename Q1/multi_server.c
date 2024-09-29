@@ -1,3 +1,4 @@
+// multithreaded_server_topcpu.c
 #include "handleClient.c"
 
 int main() {
@@ -40,7 +41,14 @@ int main() {
             perror("Accept failed");
             continue;
         }
-        handle_client_for_connection(new_sock);
+
+        int *client_sock = malloc(sizeof(int));
+        *client_sock = new_sock;
+
+        // Create a new thread to handle the client connection
+        pthread_t client_thread;
+        pthread_create(&client_thread, NULL, handle_client_for_getting_CPU_Process, client_sock);
+        pthread_detach(client_thread);
     }
 
     // Close server socket (this point is never reached in this implementation)

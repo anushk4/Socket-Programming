@@ -1,3 +1,4 @@
+// multithreaded_server.c
 #include "handleClient.c"
 
 int main() {
@@ -11,28 +12,28 @@ int main() {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
-
+    
     // Set up the server address (IP/Port)
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
-
+    
     // Bind the socket to the IP/port
     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("Bind failed");
         close(server_sock);
         exit(EXIT_FAILURE);
     }
-
+    
     // Start listening for incoming connections
     if (listen(server_sock, MAX_CLIENTS) < 0) {
         perror("Listen failed");
         close(server_sock);
         exit(EXIT_FAILURE);
     }
-
+    
     printf("Server listening on port %d...\n", PORT);
-
+    
     // Main server loop: Accept and handle incoming client connections
     while (1) {
         new_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len);
@@ -40,7 +41,16 @@ int main() {
             perror("Accept failed");
             continue;
         }
-        handle_client_for_connection(new_sock);
+
+        // Allocate memory to store client information
+        struct client_info *client = malloc(sizeof(struct client_info));
+        client->socket = new_sock;
+        client->client_addr = client_addr;
+
+        // Create a new thread to handle the client connection
+        pthread_t client_thread;
+        pthread_create(&client_thread, NULL, handle_client_for_connection, client);
+        pthread_detach(client_thread); // Detach thread so resources are freed when it finishes
     }
 
     // Close server socket (this point is never reached in this implementation)
