@@ -1,3 +1,5 @@
+MAKEFLAGS += -s
+
 all:
 	cd 'Concurrent TCP' && $(MAKE)
 	cd 'Select TCP' && $(MAKE)

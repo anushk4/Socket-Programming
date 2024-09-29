@@ -1,3 +1,5 @@
+MAKEFLAGS += -s
+
 all:
 	$(MAKE) Q_1
 	$(MAKE) Q_2
