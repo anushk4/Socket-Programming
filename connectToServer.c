@@ -1,19 +1,19 @@
 #include "connectToServer.h"
 
-// Function to handle communication with the server
+// Function to start communication with the server
 void *connect_to_server(void *arg) {
     struct client_args *client = (struct client_args *)arg;
     int sock = 0;
     struct sockaddr_in server_addr;
     char buffer[1024] = {0};
     
-    // Create a TCP socket
+    // Create a TCP socket as decribed in the tutorial
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("Client %d: Socket creation error\n", client->client_id);
         return NULL;
     }
 
-    // Set up server address (IP/Port)
+    // Set up server using IP and Port
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(PORT);
 
@@ -23,7 +23,7 @@ void *connect_to_server(void *arg) {
         return NULL;
     }
 
-    // Connect to the server
+    // Check for succesful connection with the server
     if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         printf("Client %d: Connection to server failed\n", client->client_id);
         return NULL;
@@ -31,17 +31,17 @@ void *connect_to_server(void *arg) {
 
     printf("Client %d: Connected to server at %s:%d\n", client->client_id, client->server_ip, PORT);
 
-    // Send message to server
+    // Send message to server from the client side
     send(sock, MESSAGE, strlen(MESSAGE), 0);
     printf("Client %d: Message sent to server: %s\n", client->client_id, MESSAGE);
 
-    // Receive server response
+    // Receive the response from server with ID
     int bytes_read = read(sock, buffer, 1024);
     if (bytes_read > 0) {
         printf("Client %d: Received from server: %s\n", client->client_id, buffer);
     }
 
-    // Close socket
+    // Close socket from the client side
     close(sock);
     printf("Client %d: Connection closed\n\n", client->client_id);
     return NULL;
