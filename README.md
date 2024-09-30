@@ -13,6 +13,36 @@ We implement three server-client models in this assignment:
 
 We analyse the models using `perf` for performance analysis and compiled our findings in the report.
 
+## Running the code
+1) In the root repository, run the `make` command. This creates executables for all the servers and clients in the repository in their respective directories.
+2) To run the server, run
+  ```
+  ./server
+      or
+  taskset -c <number> ./server
+  ```
+3) To run the client, run
+  ```
+  ./client <server-ip> <num_clients>
+        or
+  taskset -c <number> ./client <server-ip> <num_clients>
+  ```
+4) Run `make clean` at the end to delete all executables and perf files.
+
+## Performance Analysis
+We run the following `perf` commands to get performance evaluation metrics for different servers
+```
+sudo perf stat ./server
+        or
+sudo perf stat -e <metrics> ./server
+```
+
+We can get more details by running:
+```
+sudo perf record -e <metrics> -- ./server
+sudo perf report -f
+```
+
 ## Project Repository Structure
 
 ### Q1
