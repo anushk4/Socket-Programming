@@ -20,7 +20,7 @@ void *handle_client_for_getting_CPU_Process(void *arg) {
 
     printf("Connected to client at %s:%d\n", client_ip, client_port);
 
-    // Read and check the client requesst, here we have hardcoded the message to check that server has recieved a request
+    // Read and check the client request, here we have hardcoded the message to check that server has recieved a request
     int bytes_read = read(client_sock, buffer, BUFFER_SIZE);
     if (bytes_read > 0) {
         printf("Received request from client: %s\n", buffer);
