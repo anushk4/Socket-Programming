@@ -1,4 +1,3 @@
-// multithreaded_server_topcpu.c
 #include "handleClient.c"
 
 int main() {
@@ -6,7 +5,7 @@ int main() {
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
 
-    // Create a TCP socket
+    // Creating a TCP socket as described in the tutorial
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock < 0) {
         perror("Socket creation failed");
@@ -20,12 +19,12 @@ int main() {
         exit(EXIT_FAILURE);
     }
     
-    // Set up the server address (IP/Port)
+    // Initiate the server with proper IP and port
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
-    // Bind the socket to the IP/port
+    // Bind the socket
     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("Bind failed");
         close(server_sock);
@@ -41,7 +40,7 @@ int main() {
 
     printf("Server listening on port %d...\n", PORT);
 
-    // Main server loop: Accept and handle incoming client connections
+    // Loop for accept and handle incoming client connections that is to share the top 2 CPU process details.
     while (1) {
         new_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len);
         if (new_sock < 0) {
@@ -58,7 +57,7 @@ int main() {
         pthread_detach(client_thread);
     }
 
-    // Close server socket (this point is never reached in this implementation)
+    // Close server socket (this point is never reached in this implementation) as we are taking assumption that server will keep listening to client requests at the same port untill called exit manually.
     close(server_sock);
     return 0;
 }
