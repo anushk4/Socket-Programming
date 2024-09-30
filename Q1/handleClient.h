@@ -12,7 +12,7 @@
 #include "../cpu.c"
 #include "../connectToServer.c"
 
-// Declare the handle_client function
+// Declare the functions that are to be used in handleClient.c
 void *handle_client_for_getting_CPU_Process(void *arg);
 void *handle_client_for_connection(void *arg);
 
