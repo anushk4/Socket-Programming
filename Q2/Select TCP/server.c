@@ -13,7 +13,7 @@ int main() {
         client_sockets[i] = 0; // Initialize all client sockets to 0
     }
 
-    // Create a TCP socket
+    // Creating a TCP socket as described in the tutorial
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock < 0) {
         perror("Socket creation failed");
@@ -27,12 +27,12 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    // Set up the server address (IP/Port)
+    // Initiate the server with proper IP and port
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
 
-    // Bind the socket to the IP/port
+    // Bind the socket
     if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
         perror("Bind failed");
         close(server_sock);
